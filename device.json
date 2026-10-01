@@ -1,0 +1,18 @@
+{
+  "device_os": "android",
+  "device_product_model": "rk3568_r",
+  "device_board_model": "ynh530_gms",
+  "os_version": "11",
+  "device_manufacturer": "rockchip",
+  "serial_hardware": "54d42bad301190b2",
+  "pumps": [
+    { "pump_number": 5 },
+    { "pump_number": 6 },
+    { "pump_number": 9 },
+    { "pump_number": 10 }
+  ],
+  "site_id": "3117101",
+  "site_name": "SPBU A. Yani Bekasi",
+  "site_address": "Jl. Ahmad Yani No. 1",
+  "serial_number_ss": "gjhjghnbh"
+}

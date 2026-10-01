@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: rest_selfservice_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rest_selfservice
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminRestSelfService
+    ports:
+      - "3308:5432"
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d rest_selfservice"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: rest_selfservice
+    restart: unless-stopped
+    ports:
+      - "7701:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./api.env:/var/www/html/.env:ro
+
+volumes:
+  pgdata:

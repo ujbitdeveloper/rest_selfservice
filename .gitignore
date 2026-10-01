@@ -1,0 +1,30 @@
+# Environment — JANGAN pernah di-commit
+.env
+api.env
+*.env
+
+# Vendor / dependencies
+vendor/
+
+# CI4 writable
+writable/logs/
+writable/cache/
+writable/debugbar/
+writable/session/
+writable/uploads/
+
+# Foto absen
+assets/img/*
+!assets/img/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker override lokal
+docker-compose.override.yml
