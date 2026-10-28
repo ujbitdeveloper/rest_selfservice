@@ -30,7 +30,8 @@ class Admin extends Controller
             session()->setFlashdata('error', 'Username atau password salah');
         }
 
-        return redirect()->to(base_url('admin'));
+        // Relative Location preserves the current host, port and installation subfolder.
+        return $this->response->setStatusCode(303)->setHeader('Location', '../admin');
     }
 
     public function logout()
