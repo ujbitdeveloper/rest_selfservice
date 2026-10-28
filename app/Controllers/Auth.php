@@ -62,46 +62,33 @@ class Auth extends ResourceController
         $db   = db_connect();
         $cred = $db->table('device_credentials')->where('serial_hardware', $serial)->get()->getRow();
 
-        // Alat yang sudah terkonfirmasi / dinonaktifkan tidak boleh di-enroll ulang lewat enrollment key
+        // Alat yang dinonaktifkan dari dashboard tidak boleh hidup lagi lewat enroll
         if ($cred && ! $this->isTrue($cred->active)) {
             return $this->deny(403, 'Alat dinonaktifkan', false);
-        }
-
-        if ($cred && $this->isTrue($cred->confirmed)) {
-            return $this->deny(409, 'Alat sudah terdaftar. Gunakan device_secret (atau minta admin --rotate)', true);
         }
 
         $deviceSecret = bin2hex(random_bytes(24));
         $hash         = password_hash($deviceSecret, PASSWORD_BCRYPT);
 
-        if ($cred) {
-            // Enroll sebelumnya belum terkonfirmasi (mis. response hilang di jaringan) -> terbitkan secret baru
-            $db->table('device_credentials')->where('serial_hardware', $serial)->update([
-                'secret_hash'       => $hash,
-                'secret_rotated_at' => date('Y-m-d H:i:s'),
-            ]);
-            $db->table('refresh_tokens')->where('serial_hardware', $serial)->update(['revoked' => true]);
-        } else {
-            try {
-                $ok = $db->table('device_credentials')->insert([
-                    'serial_hardware' => $serial,
-                    'secret_hash'     => $hash,
-                    'confirmed'       => false,
-                ]);
-            } catch (\Throwable $e) {
-                $ok = false; // mis. dua request enroll bersamaan untuk serial yang sama
-            }
+        // Belum ada -> insert. Sudah ada -> secret lama ditimpa. Boleh diulang berapa kali pun.
+        $db->query(
+            'INSERT INTO device_credentials (serial_hardware, secret_hash, confirmed)
+             VALUES (?, ?, FALSE)
+             ON CONFLICT (serial_hardware) DO UPDATE
+                SET secret_hash = EXCLUDED.secret_hash,
+                    confirmed = FALSE,
+                    secret_rotated_at = NOW()',
+            [$serial, $hash]
+        );
 
-            if (! $ok) {
-                return $this->failResourceExists('Alat sedang/sudah didaftarkan. Coba lagi.');
-            }
-        }
+        // Secret berganti -> refresh token lama dicabut (token baru dibuat setelah ini)
+        $db->table('refresh_tokens')->where('serial_hardware', $serial)->update(['revoked' => true]);
 
         $out                  = $this->issueTokens($serial);
         $out['device_secret'] = $deviceSecret;
         $out['note']          = 'Simpan device_secret di alat. Nilai ini tidak akan ditampilkan lagi.';
 
-        return $this->respondCreated($out);
+        return $cred ? $this->respond($out) : $this->respondCreated($out);
     }
 
     /** POST /api/refresh  {refresh_token, device_secret} */

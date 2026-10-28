@@ -14,5 +14,7 @@ CREATE TABLE IF NOT EXISTS devices (
     site_address         TEXT,
     serial_number_ss     VARCHAR(100),
     created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
-    last_update          TIMESTAMP NOT NULL DEFAULT NOW()
+    last_update          TIMESTAMP NOT NULL DEFAULT NOW(),
+    version_hardware     VARCHAR(100),
+    device_status        bool,
 );

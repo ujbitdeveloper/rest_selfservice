@@ -65,6 +65,7 @@ class Data extends ResourceController
             'site_address'         => 'permit_empty',
             'serial_number_ss'     => 'permit_empty|max_length[100]',
             'version_hardware'     => 'permit_empty|max_length[100]',
+            'device_status'        => 'permit_empty',
         ])) {
             return $this->failValidationErrors($this->validator->getErrors());
         }
@@ -80,27 +81,28 @@ class Data extends ResourceController
         }
 
         $sql = <<<'SQL'
-INSERT INTO devices (
-    serial_hardware, device_os, device_product_model, device_board_model,
-    os_version, device_manufacturer, pumps, site_id, site_name,
-    site_address, serial_number_ss, created_at, last_update, version_hardware
-) VALUES (?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, NOW(), NOW(),?)
-ON CONFLICT (serial_hardware) DO UPDATE SET
-    device_os            = EXCLUDED.device_os,
-    device_product_model = EXCLUDED.device_product_model,
-    device_board_model   = EXCLUDED.device_board_model,
-    os_version           = EXCLUDED.os_version,
-    device_manufacturer  = EXCLUDED.device_manufacturer,
-    pumps                = EXCLUDED.pumps,
-    site_id              = EXCLUDED.site_id,
-    site_name            = EXCLUDED.site_name,
-    site_address         = EXCLUDED.site_address,
-    serial_number_ss     = EXCLUDED.serial_number_ss,
-    last_update          = NOW(),
-    version_hardware     = EXCLUDED.version_hardware
+        INSERT INTO devices (
+            serial_hardware, device_os, device_product_model, device_board_model,
+            os_version, device_manufacturer, pumps, site_id, site_name,
+            site_address, serial_number_ss, created_at, last_update, version_hardware, device_status
+        ) VALUES (?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, NOW(), NOW(),?, ?)
+        ON CONFLICT (serial_hardware) DO UPDATE SET
+            device_os            = EXCLUDED.device_os,
+            device_product_model = EXCLUDED.device_product_model,
+            device_board_model   = EXCLUDED.device_board_model,
+            os_version           = EXCLUDED.os_version,
+            device_manufacturer  = EXCLUDED.device_manufacturer,
+            pumps                = EXCLUDED.pumps,
+            site_id              = EXCLUDED.site_id,
+            site_name            = EXCLUDED.site_name,
+            site_address         = EXCLUDED.site_address,
+            serial_number_ss     = EXCLUDED.serial_number_ss,
+            last_update          = NOW(),
+            version_hardware     = EXCLUDED.version_hardware,
+            device_status        = EXCLUDED.device_status
 
-RETURNING id, (xmax = 0) AS inserted, created_at, last_update
-SQL;
+        RETURNING id, (xmax = 0) AS inserted, created_at, last_update
+        SQL;
 
         $row = db_connect()->query($sql, [
             $body['serial_hardware'],
@@ -115,6 +117,7 @@ SQL;
             $body['site_address'] ?? null,
             $body['serial_number_ss'] ?? null,
             $body['version_hardware'] ?? null,
+            $body['device_status'] ?? null,
         ])->getRow();
 
         $inserted = in_array($row->inserted, [true, 't', 'true', 1, '1'], true);
@@ -127,6 +130,7 @@ SQL;
             'serial_hardware' => $body['serial_hardware'],
             'created_at'      => $row->created_at,
             'last_update'     => $row->last_update,
+            'device_status'   => $body['device_status']
         ];
 
         return $inserted ? $this->respondCreated($result) : $this->respond($result);
